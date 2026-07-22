@@ -1,0 +1,331 @@
+ 
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>鄭宜農歌單世界盃 (32強版)</title>
+  <style>
+    :root {
+      --primary-color: #4a6fa5;
+      --accent-color: #ff6b6b;
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: var(--primary-color);
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    /* 遊戲對決區塊 */
+    #game-container {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 30px;
+      width: 90%;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .progress-bar {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+    }
+
+    .vs-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .song-btn {
+      flex: 1;
+      padding: 20px 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border: 2px solid var(--primary-color);
+      border-radius: 10px;
+      background: white;
+      color: var(--primary-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .song-btn:hover {
+      background: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .vs-divider {
+      font-size: 20px;
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+
+    /* 樹狀圖顯示區塊 */
+    #tree-container {
+      display: none;
+      width: 100%;
+      max-width: 1200px;
+      overflow-x: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+
+    .bracket {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      min-width: 900px;
+    }
+
+    .round {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      flex: 1;
+      margin: 0 5px;
+    }
+
+    .round-title {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: var(--primary-color);
+    }
+
+    .matchup {
+      display: flex;
+      flex-direction: column;
+      margin: 5px 0;
+      border-left: 3px solid var(--primary-color);
+      padding-left: 5px;
+      background: #f1f3f5;
+      border-radius: 4px;
+    }
+
+    .team {
+      padding: 4px 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .team.winner {
+      font-weight: bold;
+      color: var(--accent-color);
+      background: #ffe3e3;
+    }
+
+    .champion-box {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff3bf;
+      border: 2px dashed #f59f00;
+      border-radius: 10px;
+    }
+
+    .restart-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>鄭宜農歌單世界盃 (32強精選版)</h1>
+  <div class="subtitle">打亂順序 1v1 二選一，選出你心中的第一名！</div>
+
+  <!-- 對決面板 -->
+  <div id="game-container">
+    <div class="progress-bar" id="progress">準備開始...</div>
+    <div class="vs-container">
+      <button class="song-btn" id="optionA" onclick="selectSong(0)"></button>
+      <div class="vs-divider">VS</div>
+      <button class="song-btn" id="optionB" onclick="selectSong(1)"></button>
+    </div>
+  </div>
+
+  <!-- 結果樹狀圖面板 -->
+  <div id="tree-container">
+    <div class="champion-box">
+      <h2>🏆 你的終極冠軍歌曲：<span id="champion-name" style="color: #e67700;"></span> 🏆</h2>
+      <button class="restart-btn" onclick="initGame()">重新玩一次</button>
+    </div>
+    <div class="bracket" id="bracket-view"></div>
+  </div>
+
+  <script>
+    // 32 首歌單 (可自由替換或調整裡面的歌名)
+    const rawSongs = [
+      "太陽", "路", "大雨城市", "還是會害怕失去你", "獨立日", 
+      "太空垃圾之死", "那些酒精成癮的日子", "獸眠", "冬眠", "Our Pop Song", 
+      "光", "酒店關門之後", "2017，你。", "街仔路雨落袂停", "591", 
+      "輕輕觸碰", "深深地", "玉仔的心", "就算我放棄了世界", "千千萬萬", 
+      "人如何學會語言", "新世紀的女兒", "天已經要光", "最好的距離", "真罕得想起來", 
+      "牽我", "寬寬仔來到祢的面前", "有時候我會想要傷害我的朋友", "金黃色的", "你是真的不懂", 
+      "第一次遇見花香的那刻", "如果你也想起來"
+    ];
+
+    let roundsData = [];
+    let currentRoundSongs = [];
+    let nextRoundSongs = [];
+    let currentPairIndex = 0;
+    
+    // 32 強賽程設定為 5 輪 (共選 31 次)
+    let roundNames = ["32強賽", "16強賽", "半準決賽 (8強)", "準決賽 (4強)", "決賽 (冠亞軍)"];
+    let currentRoundIndex = 0;
+
+    // 洗牌函數
+    function shuffle(array) {
+      let arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // 初始化遊戲
+    function initGame() {
+      roundsData = [];
+      currentRoundIndex = 0;
+      currentPairIndex = 0;
+      nextRoundSongs = [];
+      
+      // 打亂 32 首歌
+      currentRoundSongs = shuffle(rawSongs);
+      
+      document.getElementById("game-container").style.display = "block";
+      document.getElementById("tree-container").style.display = "none";
+      
+      renderMatch();
+    }
+
+    // 渲染當前對決
+    function renderMatch() {
+      const totalPairs = currentRoundSongs.length / 2;
+      const progressText = `${roundNames[currentRoundIndex]} (${currentPairIndex + 1} / ${totalPairs})`;
+      document.getElementById("progress").innerText = progressText;
+
+      const songA = currentRoundSongs[currentPairIndex * 2];
+      const songB = currentRoundSongs[currentPairIndex * 2 + 1];
+
+      document.getElementById("optionA").innerText = songA;
+      document.getElementById("optionB").innerText = songB;
+    }
+
+    // 玩家點擊選擇
+    function selectSong(selectedIndex) {
+      const songA = currentRoundSongs[currentPairIndex * 2];
+      const songB = currentRoundSongs[currentPairIndex * 2 + 1];
+      const winner = selectedIndex === 0 ? songA : songB;
+
+      if (!roundsData[currentRoundIndex]) {
+        roundsData[currentRoundIndex] = [];
+      }
+      roundsData[currentRoundIndex].push({ songA, songB, winner });
+
+      nextRoundSongs.push(winner);
+      currentPairIndex++;
+
+      if (currentPairIndex * 2 >= currentRoundSongs.length) {
+        if (nextRoundSongs.length === 1) {
+          showResults(nextRoundSongs[0]);
+        } else {
+          currentRoundSongs = nextRoundSongs;
+          nextRoundSongs = [];
+          currentPairIndex = 0;
+          currentRoundIndex++;
+          renderMatch();
+        }
+      } else {
+        renderMatch();
+      }
+    }
+
+    // 顯示最終結果樹狀圖
+    function showResults(champion) {
+      document.getElementById("game-container").style.display = "none";
+      document.getElementById("tree-container").style.display = "block";
+      document.getElementById("champion-name").innerText = champion;
+
+      const bracketView = document.getElementById("bracket-view");
+      bracketView.innerHTML = "";
+
+      roundsData.forEach((roundMatches, rIndex) => {
+        const roundCol = document.createElement("div");
+        roundCol.className = "round";
+
+        const title = document.createElement("div");
+        title.className = "round-title";
+        title.innerText = roundNames[rIndex];
+        roundCol.appendChild(title);
+
+        roundMatches.forEach(m => {
+          const matchupDiv = document.createElement("div");
+          matchupDiv.className = "matchup";
+
+          const teamA = document.createElement("div");
+          teamA.className = "team " + (m.winner === m.songA ? "winner" : "");
+          teamA.innerText = m.songA;
+
+          const teamB = document.createElement("div");
+          teamB.className = "team " + (m.winner === m.songB ? "winner" : "");
+          teamB.innerText = m.songB;
+
+          matchupDiv.appendChild(teamA);
+          matchupDiv.appendChild(teamB);
+          roundCol.appendChild(matchupDiv);
+        });
+
+        bracketView.appendChild(roundCol);
+      });
+    }
+
+    window.onload = initGame;
+  </script>
+</body>
+</html>
+
+
+
+
+
